@@ -1,0 +1,13 @@
+Presentation:
+                                                          Time stamps: done
+                                                          Nicknames:done
+                                                          Scroll-up text: done
+                            Chat log history: NOT DONE COMPLETLY
+                                                          Display current users:done
+                                                          Change nickname:done
+                                                          Nick color:done
+                                                          Bold messages:done
+Cookies:
+
+
+bug with chat history, if you sign out and go back in (same user) your messages are not bolded

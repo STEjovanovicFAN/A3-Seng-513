@@ -1,0 +1,255 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name=viewport content="width=device-width, initial-scale=1, user-scalable=yes">
+    <title>Socket.IO Chat</title>
+    <!--style sheet-->
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; position:fixed; bottom: 0; margin: 0; padding-bottom: 41px; width: 70%; overflow-y: auto; max-height: 905px;}
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+
+      #chatLogCont{position: relative;}
+
+      #onlineUsers{list-style-type: none; margin: 0; padding: 0; }
+
+      .onlineUsersSize li{
+        font-size: 23px;
+        color: #A3B4A2;
+      }
+
+      h1{
+        font-size: 120px;
+        background-color: #2274A5;
+      }
+
+      h2{
+        font-size: 30px;
+      }
+
+      .container{
+        display: flex;
+      }
+
+      .fixed{
+        width: 70%;
+        padding-top: 10px;
+        position: relative;
+      }
+
+      .flex{
+        width: 30%;
+        padding-left: 70px;
+        padding-top: 10px;
+
+      }
+      @media (max-width: 1600px) {
+        #messages { list-style-type: none; position:fixed; bottom: 0; margin: 0; padding-bottom: 41px; width: 70%; overflow-y: auto; max-height: 690px;}
+        .flex{
+          width: 30%;
+          padding-top: 10px;
+
+        }
+
+      }
+
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
+  <body>
+
+    <h1>Online Chat!</h1>
+    <!--list that shows all the messages users and what username you are -->
+
+    <div class = "container">
+      <div class = "fixed", id = "chatLogCont">
+        <div>
+          <h2>You are User: <span id = nName>temp</span></h2>
+        </div>
+        <div>
+          <ul class = "chatLog", id="messages"></ul>
+        </div>
+      </div>
+      <div class = "flex">
+        <h2>Online Users:</h2>
+        <ul class= "onlineUsersSize", id = "onlineUsers"></ul>
+      </div>
+    </div>
+
+
+    <!--<ul id="users">
+        <li>user1</li>
+    </ul>-->
+
+
+    <!--form that has both the input box and the button to send -->
+    <form action="">
+      <input id="m" autocomplete="off" />
+      <button>Send</button>
+    </form>
+
+    <!--use socket scripts script-->
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+
+    <!--java script that executes with the button is pressed-->
+    <script>
+      $(function () {
+        var socket = io();
+        var user = " ";
+        var color;
+
+        //to get the postition of scroll to very bottom everytime we add a element to our list
+        function scrollDown(){
+          var getList = document.getElementById("messages");
+          getList.scrollTop = getList.scrollHeight;
+        }
+
+        //send message to the server with name and color
+        $('form').submit(function(){
+          socket.emit('chat message', $('#m').val(), user, color);
+          $('#m').val('');
+          return false;
+        });
+
+        //get message from the server
+        socket.on('chat message', function(msg, hour, min, person, usercolor){
+          var time = " "+ "(" + hour + ":" + min + ")" + ": ";
+          //var text = " " + time + ": " + msg;
+
+          //if its your message
+          if(person === user){
+            $('#messages').append($('<li>'+ '<font color = #' + usercolor + '>' + person +
+             '</font>' + time +'<b>'+ msg + '</b></li>'));
+             scrollDown();
+
+             //store your message in the servers history
+             var fullMessage = '<li>'+ '<font color = #' + usercolor + '>' + person +
+              '</font>' + time + msg + '</li>';
+              var boldMessage = '<li>'+ '<font color = #' + usercolor + '>' + person +
+               '</font>' + time +'<b>'+ msg + '</b></li>';
+              //console.log(fullMessage);
+             socket.emit('store message', fullMessage, boldMessage);
+          }
+          //if its another persons message
+          else {
+            //$('#messages').append($('<li>').text(text));
+            $('#messages').append($('<li>'+ '<font color = #' + usercolor + '>' + person +
+             '</font>' + time + msg + '</li>'));
+             scrollDown();
+          }
+
+          window.scrollTo(0, document.body.scrollHeight);
+        });
+
+        //generate name on client connection and name and previous history in the chat
+        socket.on('name', function(name, DEFAULT_COLOR, hist, bHist){
+          user = name;
+          color = DEFAULT_COLOR;
+          document.getElementById("nName").innerHTML = name;
+
+          //check for cookie
+          //var cookieValue = document.cookie.replace(/(?:(?:^|.*;\s*)userName\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+          //console.log(cookieValue);
+
+
+          //undocument here for cookies
+          //--------------------------------------------------
+          /*
+          //document.cookie = 'cookieUser=; Max-Age=0'
+          //check if the cookie exists
+          if(document.cookie.indexOf('cookieUser=') >= 0){
+            //check if its null
+            if(document.cookie.indexOf('cookieUser=') === null){
+              console.log("cookie does not exist");
+              //create a cookie
+              document.cookie = "cookieUser=" + user;
+            }
+            else{
+              //if it does get it change the userName
+              console.log(document.cookie.replace(/(?:(?:^|.*;\s*)cookieUser\s*\=\s*([^;]*).*$)|^.*$/, "$1"));
+              user = document.cookie.replace(/(?:(?:^|.*;\s*)cookieUser\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+              //update
+              console.log(user);
+              document.getElementById("nName").innerHTML = user;
+              //document.cookie = 'cookieUser=;Max-Age=0';
+
+            }
+
+          }
+
+          else{
+            //if it does get it change the userName
+            console.log(document.cookie.replace(/(?:(?:^|.*;\s*)cookieUser\s*\=\s*([^;]*).*$)|^.*$/, "$1"));
+            user = document.cookie.replace(/(?:(?:^|.*;\s*)cookieUser\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+            //update
+            console.log(user);
+            document.getElementById("nName").innerHTML = user;
+            //document.cookie = 'cookieUser=;Max-Age=0';
+          }
+        //  document.cookie = "userName=hi";
+        */
+          //----------------------------------------------------------------
+
+          //var cookieValue = document.cookie.replace(/(?:(?:^|.*;\s*)userName\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+          //console.log(cookieValue);
+
+          //console.log(hist);
+          var history = hist;
+          var toString = " ";
+          var toString2 = " ";
+          for(var i = 0; i < history.length; i++){
+            toString = history[i];
+            toString2 = bHist[i];
+            //console.log(toString);
+
+            var array2 = toString.split("<");
+            var array3 = array2[2].split(">");
+            var gotName = array3[1];
+            //console.log(gotName);
+
+            //bolded message if this is the user
+            if(gotName === user){
+              $('#messages').append($(toString2));
+            }
+            //normal message if this is not the user
+            else{
+              $('#messages').append($(toString));
+            }
+          }
+
+        //  document.getElementByID("nName").innerHTML = name;
+        });
+
+        //change this clients color
+        socket.on('color', function(newColor){
+          color = newColor;
+        });
+
+        //update onlineUser list
+        socket.on('onUsers', function(array){
+          //delete all li elements
+          var ul = document.getElementById("onlineUsers");
+          if(ul){
+            while(ul.firstChild){
+              ul.removeChild(ul.firstChild);
+            }
+          }
+
+          //add the new online users
+          for(var i = 0; i < array.length; i++){
+            $('#onlineUsers').append($('<li>'+ array[i] + '</li>'));
+          }
+
+        });
+
+      });
+    </script>
+
+  </body>
+</html>
